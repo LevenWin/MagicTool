@@ -23,13 +23,7 @@ export default function VideoBgRemoval() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const addLog = (log: string) => {
-    setDebugLogs(prev => [...prev, log]);
-    console.log(log);
-  };
 
-  const [debugImage, setDebugImage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +115,6 @@ export default function VideoBgRemoval() {
     if (!videoRef.current || !videoUrl) return;
     
     setIsProcessing(true);
-    setDebugLogs([]);
     setProgressMsg('Initializing AI model...');
     setProgressPercent(0);
     setResultUrl(null);
@@ -173,22 +166,17 @@ export default function VideoBgRemoval() {
         
         let transparentBlob: Blob;
         try {
-          addLog(`Starting removeBackground for frame ${i}, blob size: ${frameBlob.size}`);
           transparentBlob = await removeBackground(frameBlob, {
             output: { format: 'image/png' },
             model: 'medium',
-            debug: true,
             progress: (key, current, total) => {
               if (i === 0) {
                 // Models are downloaded only on the first frame typically
-                addLog(`Downloading AI model progress [${key}]: ${Math.round((current/total)*100)}%`);
                 setProgressMsg(`Downloading AI model (${key}): ${Math.round((current / total) * 100)}%`);
               }
             }
           });
-          addLog(`Finished removeBackground for frame ${i}, output blob size: ${transparentBlob.size}`);
         } catch (e: any) {
-          addLog(`Failed to remove bg for frame ${i}: ${e?.message}`);
           console.error('Failed to remove bg for frame', i, e);
           if (i === 0) {
             alert('Failed to initialize background removal AI. Hardware acceleration might not be available or network error occurred.');
@@ -220,11 +208,9 @@ export default function VideoBgRemoval() {
         if (exportFormat === 'gif') {
           // Store raw pixels for better compatibility with modern-gif
           frames.push(ctx.getImageData(0, 0, w, h).data);
-          if (i === 0) setDebugImage(canvas.toDataURL('image/png'));
         } else {
           // Whammy needs webp data URLs
           frames.push(canvas.toDataURL('image/webp', 0.9));
-          if (i === 0) setDebugImage(frames[0]);
         }
       }
 
@@ -473,21 +459,6 @@ export default function VideoBgRemoval() {
                       {isProcessing && (
                         <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden mt-2">
                           <div className="h-full bg-teal-600 transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
-                        </div>
-                      )}
-
-                      {debugLogs.length > 0 && (
-                        <div className="mt-4 p-3 bg-neutral-900 text-green-400 font-mono text-xs rounded-xl overflow-y-auto max-h-48 whitespace-pre-wrap">
-                          {debugLogs.map((log, idx) => (
-                            <div key={idx} className="mb-1">{log}</div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {debugImage && (
-                        <div className="mt-4">
-                          <p className="text-sm font-semibold mb-2">Debug First Frame:</p>
-                          <img src={debugImage} className="w-full rounded border border-neutral-200" />
                         </div>
                       )}
                     </div>
