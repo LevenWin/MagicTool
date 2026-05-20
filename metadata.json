@@ -1,0 +1,5 @@
+{
+  "name": "MagicCut Background Remover",
+  "description": "A web app to remove image backgrounds using AI. Supports drag and drop, pasting, and image URLs.",
+  "requestFramePermissions": []
+}
